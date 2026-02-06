@@ -280,10 +280,12 @@ if __name__ == '__main__':
 
     app.run(host='0.0.0.0', port=5000, debug=True)
 
-@app.route("/logout")
+@app.route('/logout')
 def logout():
-    req_session.clear()
-    return redirect("/login")
+    session.clear()
+    return redirect('/login')
+
+
 
 
 
