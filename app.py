@@ -73,12 +73,18 @@ def get_data():
 
         login_response = req_session.post(url, data=login_data, allow_redirects=True)
 
-        if login_response.status_code != 200:
-            return jsonify({'error': f'Błąd logowania – kod HTTP {login_response.status_code}'})
+if login_response.status_code != 200:
+    return jsonify({'error': f'Błąd logowania – kod HTTP {login_response.status_code}'})
 
-        soup = BeautifulSoup(login_response.text, 'html.parser')
+# ⬇️ KLUCZOWA ZMIANA: po loginie wchodzimy NA STRONĘ Z PODZIAŁAMI
+data_page = req_session.get("https://tram.gait.pl/podzialy.php")
 
-        main_rows = []
+if data_page.status_code != 200:
+    return jsonify({'error': 'Nie udało się pobrać strony z podziałami'})
+
+soup = BeautifulSoup(data_page.text, 'html.parser')
+
+main_rows = []
 
         # Wyciągamy wiersze z głównej tabeli
         for table in soup.find_all('table'):
@@ -284,6 +290,7 @@ if __name__ == '__main__':
 def logout():
     session.clear()
     return redirect('/login')
+
 
 
 
