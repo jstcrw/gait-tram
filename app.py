@@ -1,15 +1,49 @@
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, redirect, session, render_template_string
+import os
+
 
 app = Flask(__name__)
+
+app.secret_key = "cos_losowego_do_sesji"
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
+
 
 # Zmień na swoje prawdziwe dane
 USERNAME = '3123'                  # Twój numer konta
 PASSWORD = '446685923008'          # ← wpisz tutaj swoje prawdziwe hasło
 
+LOGIN_HTML = """
+<!doctype html>
+<title>Logowanie</title>
+<h3>Podaj hasło</h3>
+<form method="post">
+  <input type="password" name="password" autofocus>
+  <button type="submit">Wejdź</button>
+</form>
+{% if error %}
+<p style="color:red;">Złe hasło</p>
+{% endif %}
+"""
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        if request.form.get("password") == APP_PASSWORD:
+            session["logged"] = True
+            return redirect("/")
+        else:
+            return render_template_string(LOGIN_HTML, error=True)
+
+    return render_template_string(LOGIN_HTML, error=False)
+
+
+
 @app.route('/get_data')
 def get_data():
+    if not session.get("logged"):
+        return jsonify({"error": "Brak dostępu"}), 403
     try:
         session = requests.Session()
         
@@ -83,6 +117,8 @@ from flask import render_template_string
 
 @app.route('/')
 def home():
+    if not session.get("logged"):
+        return redirect("/login")
     return render_template_string('''
 <!DOCTYPE html>
 <html lang="pl">
@@ -143,6 +179,9 @@ def home():
       </div>
     </div>
   </div>
+
+<a href="/logout" class="btn btn-secondary mb-3">Wyloguj</a>
+
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -220,4 +259,10 @@ def home():
 
 
 if __name__ == '__main__':
+
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
