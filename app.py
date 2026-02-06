@@ -29,6 +29,9 @@ LOGIN_HTML = """
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    print("APP_PASSWORD =", APP_PASSWORD)
+
+  
     if request.method == "POST":
         if request.form.get("password") == APP_PASSWORD:
             session["logged"] = True
@@ -266,3 +269,4 @@ if __name__ == '__main__':
 def logout():
     session.clear()
     return redirect("/login")
+
