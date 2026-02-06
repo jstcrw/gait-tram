@@ -9,6 +9,10 @@ app = Flask(__name__)
 app.secret_key = "cos_losowego_do_sesji"
 APP_PASSWORD = os.environ.get("APP_PASSWORD")
 
+print("ENV KEYS:", list(os.environ.keys()))
+print("APP_PASSWORD repr:", repr(APP_PASSWORD))
+
+
 
 # Zmień na swoje prawdziwe dane
 USERNAME = '3123'                  # Twój numer konta
@@ -269,4 +273,5 @@ if __name__ == '__main__':
 def logout():
     session.clear()
     return redirect("/login")
+
 
