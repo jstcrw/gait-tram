@@ -200,7 +200,10 @@ def home():
 
     async function loadData() {
       try {
-        const r = await fetch('/get_data');
+        const r = await fetch('/get_data', {
+  credentials: 'same-origin'
+});
+
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Brak danych');
 
@@ -273,5 +276,6 @@ if __name__ == '__main__':
 def logout():
     session.clear()
     return redirect("/login")
+
 
 
