@@ -52,7 +52,7 @@ def get_data():
     if not session.get("logged"):
         return jsonify({"error": "Brak dostępu"}), 403
     try:
-        session = requests.Session()
+        req_session = requests.Session()
         
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
@@ -64,14 +64,14 @@ def get_data():
 
         url = 'https://tram.gait.pl/index.php'
 
-        session.get(url)
+        req_session.get(url)
 
         login_data = {
             'konto': USERNAME,
             'password': PASSWORD,
         }
 
-        login_response = session.post(url, data=login_data, allow_redirects=True)
+        login_response = req_session.post(url, data=login_data, allow_redirects=True)
 
         if login_response.status_code != 200:
             return jsonify({'error': f'Błąd logowania – kod HTTP {login_response.status_code}'})
@@ -200,9 +200,17 @@ def home():
 
     async function loadData() {
       try {
-        const r = await fetch('/get_data', {
+       const r = await fetch('/get_data', {
   credentials: 'same-origin'
 });
+
+if (!r.ok) {
+  alert('Sesja wygasła, odśwież stronę i zaloguj się ponownie');
+  return;
+}
+
+const d = await r.json();
+
 
         const d = await r.json();
         if (!d.success) throw new Error(d.error || 'Brak danych');
@@ -274,8 +282,9 @@ if __name__ == '__main__':
 
 @app.route("/logout")
 def logout():
-    session.clear()
+    req_session.clear()
     return redirect("/login")
+
 
 
 
