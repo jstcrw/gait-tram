@@ -51,9 +51,10 @@ def login():
 def get_data():
     if not session.get("logged"):
         return jsonify({"error": "Brak dostępu"}), 403
+
     try:
         req_session = requests.Session()
-        
+
         req_session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -64,6 +65,7 @@ def get_data():
 
         url = 'https://tram.gait.pl/index.php'
 
+        # wejście na stronę startową (cookies)
         req_session.get(url)
 
         login_data = {
@@ -71,60 +73,47 @@ def get_data():
             'password': PASSWORD,
         }
 
+        # logowanie
         login_response = req_session.post(url, data=login_data, allow_redirects=True)
 
-if login_response.status_code != 200:
-    return jsonify({'error': f'Błąd logowania – kod HTTP {login_response.status_code}'})
+        if login_response.status_code != 200:
+            return jsonify({'error': f'Błąd logowania – kod HTTP {login_response.status_code}'})
 
-# ⬇️ KLUCZOWA ZMIANA: po loginie wchodzimy NA STRONĘ Z PODZIAŁAMI
-data_page = req_session.get("https://tram.gait.pl/podzialy.php")
+        # ⬇️ KLUCZ: po loginie wchodzimy na stronę z podziałami
+        data_page = req_session.get("https://tram.gait.pl/podzialy.php")
 
-if data_page.status_code != 200:
-    return jsonify({'error': 'Nie udało się pobrać strony z podziałami'})
+        if data_page.status_code != 200:
+            return jsonify({'error': 'Nie udało się pobrać strony z podziałami'})
 
-soup = BeautifulSoup(data_page.text, 'html.parser')
+        soup = BeautifulSoup(data_page.text, 'html.parser')
 
-main_rows = []
+        main_rows = []
 
-        # Wyciągamy wiersze z głównej tabeli
         for table in soup.find_all('table'):
-            if 'Data' in table.get_text(strip=True) and 'Nr służbowy' in table.get_text(strip=True):
+            if 'Data' in table.get_text():
                 headers = None
                 for tr in table.find_all('tr'):
                     cells = [td.get_text(strip=True) for td in tr.find_all(['td', 'th'])]
                     if not cells:
                         continue
 
-                    if not headers and len(cells) >= 8 and 'Data' in cells[0]:
+                    if not headers:
                         headers = cells
                         continue
 
-                    if headers and len(cells) >= 6:
-                        # Pomijamy wiersz z informacjami dodatkowymi
-                        row_text = ' '.join(cells).lower()
-                        if 'procedura narkotesty' in row_text or 'ulotka rekrutacyjna' in row_text:
-                            continue
-                        row = dict(zip(headers, cells + [''] * (len(headers) - len(cells))))
-                        main_rows.append(row)
-
-                break  # bierzemy tylko pierwszą pasującą tabelę
-
-        # INFO – proste zebranie tekstu po tabeli (można później ulepszyć)
-        info_html = '<p>Brak dodatkowych informacji lub sekcja nie została znaleziona.</p>'
-        body_text = soup.get_text(separator='\n', strip=True)
-        start = body_text.find('Procedura Narkotesty')
-        if start != -1:
-            info_html = '<pre>' + body_text[start:start+800] + '</pre>'
+                    row = dict(zip(headers, cells))
+                    main_rows.append(row)
+                break
 
         return jsonify({
             'success': True,
             'main_rows': main_rows,
-            'info_html': info_html,
             'main_count': len(main_rows)
         })
 
     except Exception as e:
-        return jsonify({'error': f'Błąd serwera: {str(e)}'})
+        return jsonify({'error': f'Błąd serwera: {str(e)}'}), 500
+
 
 from flask import render_template_string
 
@@ -290,6 +279,7 @@ if __name__ == '__main__':
 def logout():
     session.clear()
     return redirect('/login')
+
 
 
 
